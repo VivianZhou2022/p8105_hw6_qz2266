@@ -32,7 +32,7 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ### Problem 2
 
-```{r read and tidy}
+```{r read and tidy data}
 # read data
 homicide = 
   read.csv("https://raw.githubusercontent.com/washingtonpost/data-homicides/master/homicide-data.csv", na = c("","NA","Unknown")) %>%
@@ -52,6 +52,29 @@ homicide =
     city_state != "Phoenix,AZ",
     city_state != "Kansas City,MO",
     city_state != "Tulsa,AL") %>%
+  filter(!is.na(victim_age)) %>%
   select(city_state, resolution, victim_age, victim_sex, victim_race)
 ```
 
+### Run glm for the city of Baltimore, MD
+
+```{r run glm logistic regression on Baltimore}
+# baltimore df
+baltimore_df =
+  homicide %>% 
+  filter(city_state == "Baltimore, MD")
+baltimore_df
+
+# run glm
+baltimore_glm = baltimore_df %>% 
+  glm(resolution ~ victim_age + victim_sex + victim_race, 
+      data = ., family = binomial(link = "logit")) %>%
+  broom::tidy() %>% 
+  mutate(OR = exp(estimate),
+         lower_ci = exp(estimate - 1.96*std.error),
+         upper_ci = exp(estimate + 1.96*std.error)) %>% 
+  select(term, log_OR = estimate, OR, lower_ci, upper_ci) %>%
+  filter(term == "victim_sexMale") %>%
+  knitr::kable(digits = 3)
+baltimore_glm
+```
