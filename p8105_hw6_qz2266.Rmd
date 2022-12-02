@@ -71,7 +71,6 @@ homicide =
 baltimore_df =
   homicide %>% 
   filter(city_state == "Baltimore, MD")
-baltimore_df
 
 # run glm
 baltimore_glm = baltimore_df %>% 
@@ -121,6 +120,10 @@ city_df %>%
   ggplot(aes(x = city_state, y = OR)) + 
   geom_point() + 
   geom_errorbar(aes(ymin = lower_CI, ymax = upper_CI)) + 
+  labs(
+    title = "Estimated ORs and CIs for Each City",
+    x = "City, State",
+    y = "Estimated Odds Ratio") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
@@ -132,10 +135,82 @@ birthweight =
   read_csv("data/birthweight.csv", na = c("","NA","Unknown")) %>% 
   mutate( 
     babysex = as.factor(babysex),
+    babysex = recode_factor(babysex,
+                           "1" = "male",
+                           "2" = "female"),
     frace = as.factor(frace),
+    frace = recode_factor(frace,
+                          "1" = "White",
+                          "2" = "Black",
+                          "3" = "Asian",
+                          "4" = "Puerto Rican",
+                          "8" = "Other"),
     malform = as.factor(malform),
+    malform = recode_factor(malform,
+                            "0" = "absent", 
+                            "1" = "present"),
     mrace = as.factor(mrace),
+    mrace = recode_factor(mrace,
+                          "1" = "White",
+                          "2" = "Black",
+                          "3" = "Asian",
+                      "4" = "Puerto Rican",
+                      "8" = "Other")
     ) 
 purrr::map(birthweight, ~ sum(is.na(.))) # check for missing data 
 ```
+
+#### Propose a regression model for birthweight based on a hypothesized structure for the factors that underly birthweight.
+```{r }
+birthweight %>% 
+  ggplot(aes(y = bwt, x = momage)) +
+  geom_point() +
+  geom_smooth()
+
+birthweight %>% 
+  ggplot(aes(y = bwt, x = ppwt, color = ppbmi)) +
+  geom_point() +
+  geom_smooth()
+
+birthweight %>% 
+  ggplot(aes(y = bwt, x = wtgain)) +
+  geom_point() +
+  geom_smooth()
+
+birthweight %>% 
+  ggplot(aes(y = bwt, x = smoken)) +
+  geom_point() +
+  geom_smooth()
+
+```
+
+```{r}
+# correlation plot
+library(corrplot)
+bw_df = birthweight %>% 
+  select(bwt, bhead, blength, delwt, fincome, gaweeks, menarche, mheight, parity, pnumlbw, pnumsga, ppwt, momage, ppbmi, wtgain, smoken)
+
+corrplot(cor(bw_df), type = "upper", diag = FALSE)
+```
+
+```{r model building}
+# use F-statistic for globally testing if ANY of the independent variables is related to the outcome.
+bw_model_1 = birthweight %>% 
+  lm(bwt ~ momage + ppbmi + wtgain + smoken, data = .) 
+summary(bw_model_1)
+bw_model_1 %>% 
+  broom::tidy() %>% 
+  knitr::kable(digit = 3)
+```
+
+To build a valid model,  bwt was selected as the outcome. My research question is whether Mom's status is related to the birth weight of their babies. So here I chose 
+
+To verify 
+Since the P value for the F-test of overall significance test is <2.2e-16, less than the significance level, we reject the null-hypothesis and conclude that this model provides a better fit than the intercept-only model, aka AT LEAST 1 independent variable is related to the outcome.
+
+Moreover, the adjusted R-squared value is 0.1067, suggesting this regression model accounts for 11% of the variance.
+
+
+
+#### Cross validation of these three models
 
