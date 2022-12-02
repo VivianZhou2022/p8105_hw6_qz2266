@@ -210,7 +210,41 @@ Since the P value for the F-test of overall significance test is <2.2e-16, less 
 
 Moreover, the adjusted R-squared value is 0.1067, suggesting this regression model accounts for 11% of the variance.
 
+####  Model diagnositcs: plots for residuals normality and for model residuals against fitted values
+
+```{r plotting residuals normality}
+# check the distribution of residuals
+birthweight %>% 
+  add_residuals(bw_model_1) %>%
+      ggplot(aes(x = resid)) + geom_density()
+```
+
+```{r QQ_plot}
+plot(bw_model_1, which = 2)
+```
+
+As the first step of model diagnostic, I checked if the residual is normally distributed. 
+
+In the distribution plot, residuals follow a normal distribution centered on 0. In QQ plot, we can see a straight line with some outliers but the extent of outliers is acceptable. Thus, based on these two plots, we concluded the basic assumption of residual normality is satisfied in this model.
+
+```{r plotting residuals against fitted values}
+birthweight %>% 
+  add_residuals(bw_model_1) %>%
+    add_predictions(bw_model_1) %>% 
+      ggplot(aes(x = pred, y = resid)) + 
+      geom_point() +
+      geom_smooth(se = F, color = "red", method = "lm") +
+      labs(
+      title = "Residuals vs. Fitted",
+      x = "Fitted values",
+      y = "Residuals"
+      ) +
+      theme(plot.title = element_text(hjust = 0.5))
+```
+
+Secondly, I checked residuals vs fitted values. This plot is used to detect unequal error variance (heteroscedasticity) and outliers.
+
+From the plot we can see residuals values are symmetrically distributed and bounce around 0, which is their expected value. Residuals form a horizontal (linear) ‘band’ around zero. Therefore, from their random pattern, we concluded that the residuals have constant variance. Moreover, the plot shows a couple of ‘unusual’ values stand out from the random pattern, suggesting a few potential outliers.
 
 
-#### Cross validation of these three models
 
