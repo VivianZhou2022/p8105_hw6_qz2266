@@ -113,7 +113,6 @@ city_df =
 city_df
 ```
 
-
 #### Create a plot that shows the estimated ORs and CIs for each city.
 
 ```{r  plot}
@@ -125,4 +124,18 @@ city_df %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
+
+### Problem 3
+
+```{r load and clean data}
+birthweight = 
+  read_csv("data/birthweight.csv", na = c("","NA","Unknown")) %>% 
+  mutate( 
+    babysex = as.factor(babysex),
+    frace = as.factor(frace),
+    malform = as.factor(malform),
+    mrace = as.factor(mrace),
+    ) 
+purrr::map(birthweight, ~ sum(is.na(.))) # check for missing data 
+```
 
