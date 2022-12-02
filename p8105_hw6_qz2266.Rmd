@@ -114,3 +114,15 @@ city_df
 ```
 
 
+#### Create a plot that shows the estimated ORs and CIs for each city.
+
+```{r  plot}
+city_df %>% 
+  mutate(city_state = fct_reorder(city_state, OR)) %>% 
+  ggplot(aes(x = city_state, y = OR)) + 
+  geom_point() + 
+  geom_errorbar(aes(ymin = lower_CI, ymax = upper_CI)) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
