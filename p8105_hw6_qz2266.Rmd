@@ -5,13 +5,15 @@ date: "2022-11-30"
 output: github_document
 ---
 
-
 ```{r packages}
 library(tidyverse)
 library(dplyr)
+library(rvest)
 library(purrr)
+library(ggplot2)
+library(modelr)
+library(mgcv)
 library(patchwork)
-library(p8105.datasets)
 library(viridis)
 
 knitr::opts_chunk$set(
@@ -38,25 +40,31 @@ homicide =
   read.csv("https://raw.githubusercontent.com/washingtonpost/data-homicides/master/homicide-data.csv", na = c("","NA","Unknown")) %>%
   
 # create a city_state variable, a binary solution variable and make sure victim_age is numeric
-  mutate(city_state = str_c(city, state, sep = ", "),
-         resolution = case_when(
+  mutate(
+    city_state = str_c(city, state, sep = ", "),
+    resolution = case_when(
            disposition == "Closed without arrest" ~ 0,
            disposition == "Open/No arrest"        ~ 0,
            disposition == "Closed by arrest"      ~ 1),
-         victim_age = as.numeric(victim_age)) %>% 
+    victim_age = as.numeric(victim_age)
+  ) %>% 
   
 # Omit 4 cities
   filter(
     victim_race %in% c("White", "Black"),
-    city_state != "Dallas,TX",
-    city_state != "Phoenix,AZ",
-    city_state != "Kansas City,MO",
-    city_state != "Tulsa,AL") %>%
+    city_state != "Dallas, TX",
+    city_state != "Phoenix, AZ",
+    city_state != "Kansas City, MO",
+    city_state != "Tulsa, AL") %>%
   filter(!is.na(victim_age)) %>%
+  filter(!is.na(victim_sex)) %>%
+  filter(!is.na(victim_race)) %>%
+  filter(!is.na(resolution)) %>%
+  filter(!is.na(city_state)) %>%
   select(city_state, resolution, victim_age, victim_sex, victim_race)
 ```
-
-### Run glm for the city of Baltimore, MD
+    
+#### Run glm for the city of Baltimore, MD
 
 ```{r run glm logistic regression on Baltimore}
 # baltimore df
@@ -70,11 +78,39 @@ baltimore_glm = baltimore_df %>%
   glm(resolution ~ victim_age + victim_sex + victim_race, 
       data = ., family = binomial(link = "logit")) %>%
   broom::tidy() %>% 
-  mutate(OR = exp(estimate),
-         lower_ci = exp(estimate - 1.96*std.error),
-         upper_ci = exp(estimate + 1.96*std.error)) %>% 
-  select(term, log_OR = estimate, OR, lower_ci, upper_ci) %>%
+  mutate(
+    OR = exp(estimate),
+    lower_CI = exp(estimate - 1.96*std.error),
+    upper_CI = exp(estimate + 1.96*std.error)
+  ) %>% 
+  select(term, OR, lower_CI, upper_CI) %>%
   filter(term == "victim_sexMale") %>%
   knitr::kable(digits = 3)
 baltimore_glm
 ```
+
+#### Run glm for each of the cities
+
+```{r run glm for all cities}
+city_df = 
+  homicide %>% 
+  nest(data = -city_state) %>% 
+  mutate(
+    raw_model = 
+      map(data, ~glm(resolution ~ victim_age + victim_sex + victim_race, family = binomial(),data = .x)), 
+    tidy_model = map(raw_model, broom::tidy)
+  ) %>% 
+  select(city_state, tidy_model) %>% 
+  unnest(cols = tidy_model) %>%
+  mutate(
+     OR = exp(estimate),
+     lower_CI = exp(estimate - 1.96*std.error),
+     upper_CI = exp(estimate + 1.96*std.error)
+  ) %>%
+  filter(term == "victim_sexMale") %>%
+  select(city_state, term, OR, lower_CI, upper_CI)
+   
+city_df
+```
+
+
