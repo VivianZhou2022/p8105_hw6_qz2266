@@ -119,7 +119,7 @@ city_df
 city_df %>% 
   mutate(city_state = fct_reorder(city_state, OR)) %>% 
   ggplot(aes(x = city_state, y = OR)) + 
-  geom_point() + 
+  geom_point(color = "red") + 
   geom_errorbar(aes(ymin = lower_CI, ymax = upper_CI)) + 
   labs(
     title = "Estimated ORs and CIs for Each City",
@@ -171,6 +171,15 @@ birthweight =
     ) 
 purrr::map(birthweight, ~ sum(is.na(.))) # check for missing data 
 ```
+
+#### Summary of the data set
+```{r}
+skimr::skim(birthweight) %>% 
+  select(-c(factor.ordered, factor.n_unique, factor.top_counts,numeric.hist)) %>% 
+  knitr::kable()
+```
+
+Two abnormal variables: pnumlbw and pnumgsa show only 0 for all of their observations. We won't include these two variables into our regression model.  
 
 #### Propose a regression model for birthweight based on a hypothesized structure for the factors that underly birthweight.
 
