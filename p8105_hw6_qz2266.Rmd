@@ -49,7 +49,7 @@ homicide =
     victim_age = as.numeric(victim_age)
   ) %>% 
   
-# Omit 4 cities
+# Omit 4 cities and limit the races
   filter(
     victim_race %in% c("White", "Black"),
     city_state != "Dallas, TX",
@@ -126,6 +126,17 @@ city_df %>%
     y = "Estimated Odds Ratio") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
+
+**Comments on the plot**: 
+
+This plot shows us the city-specific odds ratio of solving homicides among male vs female victims, while keeping all other variables fixed. With odds ratio = 1, the odds of solved homicides among male victims is equals to that among female victims. From the plot we found:
+
+1). New York, NY has the lowest estimated odds ratio while Albuquerque, NM has the highest.
+
+2). For the majority of cities, the odds of solved homicides is lower when the victims are male, compared to when victims are female. Or we can say for most cities, victims in solved homicides are more likely to be female than male, since their odds ratio are below 1. Only in less than 10 cities, such as Fresno, CA, when the victims are male, the possibility of homicides gets solved is higher than when the victims are female. 
+
+3). Almost half of the cities show a statistically significant association between the victim being male and the likelihood of the homicide to go solved vs. the victim being female, since their CIs didn't include 1.
+
 
 
 ### Problem 3
@@ -211,7 +222,7 @@ To build a valid model,  bwt was selected as the outcome. My research question i
 To verify 
 Since the P value for the F-test of overall significance test is <2.2e-16, less than the significance level, we reject the null-hypothesis and conclude that this model provides a better fit than the intercept-only model, aka AT LEAST 1 independent variable is related to the outcome.
 
-Moreover, the adjusted R-squared value is 0.1067, suggesting this regression model accounts for 11% of the variance.
+Moreover, the adjusted R-squared value is 0.1067, suggesting 11% variation in outcome is explained by the variation in independaent variables.
 
 ####  Model diagnositcs: plots for residuals normality and for model residuals against fitted values
 
@@ -336,4 +347,4 @@ summary(bw_model_3)$adj.r.squared
 
 **Comparing my model with the two others**: Based on the RMSE distribution of each model, the best model is model 3 which regresses birthweight on head circumference, length, sex, and all interactions, since it has the best RMSE distribution with the lowest value on average 100 different iterations of training and testing data. The second best model is model 2 which is the main effects only model. Model 1, the one I proposed, is the worst.  
 
-Moreover, the adjusted R-squared of model 1, model 2 and model 3 are 0.1067, 0.5767 and 0.6844, respectively, also suggesting model 3 is better than model 2, and model 1 is the least favorable. 
+Moreover, the adjusted R-squared of model 1, model 2 and model 3 are 0.1067, 0.5767 and 0.6844, respectively, also suggesting model 3 is better than model 2, and model 1 is the least favorable, in terms of goodness of fit. 
