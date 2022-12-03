@@ -80,9 +80,10 @@ baltimore_glm = baltimore_df %>%
   mutate(
     OR = exp(estimate),
     lower_CI = exp(estimate - 1.96*std.error),
-    upper_CI = exp(estimate + 1.96*std.error)
+    upper_CI = exp(estimate + 1.96*std.error),
+    p_val = rstatix::p_format(p.value, digits = 2)
   ) %>% 
-  select(term, OR, lower_CI, upper_CI) %>%
+  select(term, OR, lower_CI, upper_CI, p_val) %>%
   filter(term == "victim_sexMale") %>%
   knitr::kable(digits = 3)
 baltimore_glm
