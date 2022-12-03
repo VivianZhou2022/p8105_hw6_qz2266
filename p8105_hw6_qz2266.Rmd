@@ -127,7 +127,7 @@ city_df %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-**Comments on the plot**: 
+**Comments on the plot:**
 
 This plot shows us the city-specific odds ratio of solving homicides among male vs female victims, while keeping all other variables fixed. With odds ratio = 1, the odds of solved homicides among male victims is equals to that among female victims. From the plot we found:
 
@@ -172,37 +172,6 @@ purrr::map(birthweight, ~ sum(is.na(.))) # check for missing data
 ```
 
 #### Propose a regression model for birthweight based on a hypothesized structure for the factors that underly birthweight.
-```{r }
-birthweight %>% 
-  ggplot(aes(y = bwt, x = momage)) +
-  geom_point() +
-  geom_smooth()
-
-birthweight %>% 
-  ggplot(aes(y = bwt, x = ppwt, color = ppbmi)) +
-  geom_point() +
-  geom_smooth()
-
-birthweight %>% 
-  ggplot(aes(y = bwt, x = wtgain)) +
-  geom_point() +
-  geom_smooth()
-
-birthweight %>% 
-  ggplot(aes(y = bwt, x = smoken)) +
-  geom_point() +
-  geom_smooth()
-
-```
-
-```{r}
-# correlation plot
-library(corrplot)
-bw_df = birthweight %>% 
-  select(bwt, bhead, blength, delwt, fincome, gaweeks, menarche, mheight, parity, pnumlbw, pnumsga, ppwt, momage, ppbmi, wtgain, smoken)
-
-corrplot(cor(bw_df), type = "upper", diag = FALSE)
-```
 
 ```{r model building}
 # use F-statistic for globally testing if ANY of the independent variables is related to the outcome.
@@ -213,16 +182,21 @@ bw_model_1 %>%
   broom::tidy() %>% 
   knitr::kable(digit = 3)
 ```
-**Steps to building model:** I chose to use an underlying hypothesis to drive my model building process. We know that exposure to certain environmental conditions and social determinants impact birth outcomes through stress responses, so I included smoking status and mother's race as predictor variables in the model. We also included baby head circumference and length at birth since these are highly correlated with birth weight.
 
-**Comments on plot**: The lower predicted birthweight values seem to skew positive in residual values. But there does not appear to be any signs that the relationship between the predictor variables in the model could have a non-linear relationship with birth weight.
+**Description of my modeling process:** 
 
-To build a valid model,  bwt was selected as the outcome. My research question is whether Mom's status is related to the birth weight of their babies. So here I chose 
+I built my regression model based on a hypothesized structure for the factors that underly birth weight.There are numerous research articles investigating the parental contribution to birth weight, especially the birth weight correlation for mother-child. My study was aimed to assess the birth weight of child and associated factors among mothers. Here I chose bwt: baby’s birth weight (grams) as outcome, regressed it on 4 properties of Mom, including 
+- momage: mother’s age at delivery (years)
+- ppbmi: mother’s pre-pregnancy BMI
+- wtgain: mother’s weight gain during pregnancy (pounds)
+- smoken: average number of cigarettes smoked per day during pregnancy.
 
-To verify 
+**Comment on my model:**
+
 Since the P value for the F-test of overall significance test is <2.2e-16, less than the significance level, we reject the null-hypothesis and conclude that this model provides a better fit than the intercept-only model, aka AT LEAST 1 independent variable is related to the outcome.
 
-Moreover, the adjusted R-squared value is 0.1067, suggesting 11% variation in outcome is explained by the variation in independaent variables.
+Moreover, the adjusted R-squared value is 0.1067, suggesting 11% variation in outcome is explained by the variation in independent variables.
+
 
 ####  Model diagnositcs: plots for residuals normality and for model residuals against fitted values
 
@@ -237,6 +211,7 @@ birthweight %>%
 plot(bw_model_1, which = 2)
 ```
 
+**Comments on the plot**:
 As the first step of model diagnostic, I checked if the residual is normally distributed. 
 
 In the distribution plot, residuals follow a normal distribution centered on 0. In QQ plot, we can see a straight line with some outliers but the extent of outliers is acceptable. Thus, based on these two plots, we concluded the basic assumption of residual normality is satisfied in this model.
@@ -255,6 +230,8 @@ birthweight %>%
       ) +
       theme(plot.title = element_text(hjust = 0.5))
 ```
+
+**Comments on the plot**:
 
 Secondly, I checked residuals vs fitted values. This plot is used to detect unequal error variance (heteroscedasticity) and outliers.
 
@@ -345,6 +322,66 @@ summary(bw_model_2)$adj.r.squared
 summary(bw_model_3)$adj.r.squared
 ```
 
-**Comparing my model with the two others**: Based on the RMSE distribution of each model, the best model is model 3 which regresses birthweight on head circumference, length, sex, and all interactions, since it has the best RMSE distribution with the lowest value on average 100 different iterations of training and testing data. The second best model is model 2 which is the main effects only model. Model 1, the one I proposed, is the worst.  
+**Comparing my model with the two others**: 
+
+Based on the RMSE distribution of each model, the best model is model 3 which regresses birth weight on head circumference, length, sex, and all interactions, since it has the best RMSE distribution with the lowest value on average 100 different iterations of training and testing data. The second best model is model 2 which is the main effects only model. Model 1, the one I proposed, is the worst.  
 
 Moreover, the adjusted R-squared of model 1, model 2 and model 3 are 0.1067, 0.5767 and 0.6844, respectively, also suggesting model 3 is better than model 2, and model 1 is the least favorable, in terms of goodness of fit. 
+
+
+### Problem 1
+
+To obtain a distribution for $\hat{r}^2$, we'll follow basically the same procedure we used for regression coefficients: draw bootstrap samples; the a model to each; extract the value I'm concerned with; and summarize. Here, we'll use `modelr::bootstrap` to draw the samples and `broom::glance` to produce `r.squared` values. 
+
+```{r weather_df, cache = TRUE}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+
+```{r}
+weather_df %>% 
+  modelr::bootstrap(n = 1000) %>% 
+  mutate(
+    models = map(strap, ~lm(tmax ~ tmin, data = .x) ),
+    results = map(models, broom::glance)) %>% 
+  select(-strap, -models) %>% 
+  unnest(results) %>% 
+  ggplot(aes(x = r.squared)) + geom_density()
+```
+
+In this example, the $\hat{r}^2$ value is high, and the upper bound at 1 may be a cause for the generally skewed shape of the distribution. If we wanted to construct a confidence interval for $R^2$, we could take the 2.5% and 97.5% quantiles of the estimates across bootstrap samples. However, because the shape isn't symmetric, using the mean +/- 1.96 times the standard error probably wouldn't work well.
+
+We can produce a distribution for $\log(\beta_0 * \beta1)$ using a similar approach, with a bit more wrangling before we make our plot.
+
+```{r}
+weather_df %>% 
+  modelr::bootstrap(n = 1000) %>% 
+  mutate(
+    models = map(strap, ~lm(tmax ~ tmin, data = .x) ),
+    results = map(models, broom::tidy)) %>% 
+  select(-strap, -models) %>% 
+  unnest(results) %>% 
+  select(id = `.id`, term, estimate) %>% 
+  pivot_wider(
+    names_from = term, 
+    values_from = estimate) %>% 
+  rename(beta0 = `(Intercept)`, beta1 = tmin) %>% 
+  mutate(log_b0b1 = log(beta0 * beta1)) %>% 
+  ggplot(aes(x = log_b0b1)) + geom_density()
+```
+
+As with $r^2$, this distribution is somewhat skewed and has some outliers. 
+
+The point of this is not to say you should always use the bootstrap -- it's possible to establish "large sample" distributions for strange parameters / values / summaries in a lot of cases, and those are great to have. But it is helpful to know that there's a way to do inference even in tough cases. 
+
+
