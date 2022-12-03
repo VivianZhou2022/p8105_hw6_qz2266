@@ -15,6 +15,7 @@ library(modelr)
 library(mgcv)
 library(patchwork)
 library(viridis)
+set.seed(1)
 
 knitr::opts_chunk$set(
   fig.width = 6,
